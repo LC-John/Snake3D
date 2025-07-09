@@ -35,6 +35,7 @@ public class SnakeBodyTubeMesh : MonoBehaviour
     {
         float minDistance = config != null ? config.minDistance : 0.2f;
         float baseY = config != null ? config.snakeBaseY : 0f;
+        float radius = config != null ? config.radius : 0.5f;
         // 只用XZ平面距离判断是否插入新采样点
         float xzDist = Vector2.Distance(
             new Vector2(snakeHead.position.x, snakeHead.position.z),
@@ -48,7 +49,26 @@ public class SnakeBodyTubeMesh : MonoBehaviour
         {
             positions.RemoveAt(positions.Count - 1);
         }
+        // 尾巴锥体采样点补充
+        int tailExtraPoints = 4;
+        float tailLen = radius * 2.5f;
+        if (positions.Count > 1)
+        {
+            Vector3 tailBase = positions[positions.Count - 1];
+            Vector3 tailDir = (positions[positions.Count - 1] - positions[positions.Count - 2]).normalized;
+            for (int i = 1; i <= tailExtraPoints; i++)
+            {
+                float t = (float)i / (tailExtraPoints + 1);
+                Vector3 tailPos = tailBase + tailDir * tailLen * t;
+                positions.Add(tailPos);
+            }
+        }
         GenerateTubeMesh();
+        // 补点后要移除多余尾巴点，防止累积
+        if (positions.Count > currentLength)
+        {
+            positions.RemoveRange(currentLength, positions.Count - currentLength);
+        }
     }
 
     // Catmull-Rom插值函数
@@ -88,8 +108,18 @@ public class SnakeBodyTubeMesh : MonoBehaviour
         Vector3[] vertices = new Vector3[vertexCount];
         int[] triangles = new int[triangleCount];
         Vector2[] uvs = new Vector2[vertexCount];
+        Color[] colors = new Color[vertexCount];
+        // 从config读取参数
+        float stripeWorldLen = config != null ? config.stripeWorldLen : 0.6f;
+        Color colorA = config != null ? config.stripeColorA : new Color(0.2f, 0.7f, 0.2f);
+        Color colorB = config != null ? config.stripeColorB : new Color(0.9f, 0.8f, 0.3f);
+        float accLen = 0f;
         for (int i = 0; i < smoothPositions.Count; i++)
         {
+            if (i > 0)
+                accLen += Vector3.Distance(smoothPositions[i], smoothPositions[i - 1]);
+            int stripeIdx = Mathf.FloorToInt(accLen / stripeWorldLen);
+            Color c = (stripeIdx % 2 == 0) ? colorA : colorB;
             Vector3 forward = (i == 0) ? (smoothPositions[0] - smoothPositions[1]).normalized : (smoothPositions[i - 1] - smoothPositions[i]).normalized;
             Vector3 up = Vector3.up;
             if (Vector3.Dot(forward, up) > 0.99f) up = Vector3.right;
@@ -101,6 +131,7 @@ public class SnakeBodyTubeMesh : MonoBehaviour
                 Vector3 offset = right * Mathf.Cos(angle) * radius + up * Mathf.Sin(angle) * radius;
                 vertices[i * circleSegment + j] = smoothPositions[i] + offset;
                 uvs[i * circleSegment + j] = new Vector2((float)j / circleSegment, (float)i / smoothPositions.Count);
+                colors[i * circleSegment + j] = c;
             }
         }
         int tri = 0;
@@ -124,7 +155,83 @@ public class SnakeBodyTubeMesh : MonoBehaviour
         mesh.vertices = vertices;
         mesh.triangles = triangles;
         mesh.uv = uvs;
+        mesh.colors = colors;
         mesh.RecalculateNormals();
+
+        // === 封口和尾巴 ===
+        // 1. 头部封口
+        AddCap(mesh, smoothPositions[0], (smoothPositions[0] - smoothPositions[1]).normalized, radius, circleSegment, colorA);
+        // 2. 尾部封口
+        AddCap(mesh, smoothPositions[smoothPositions.Count - 1], (smoothPositions[smoothPositions.Count - 1] - smoothPositions[smoothPositions.Count - 2]).normalized, radius, circleSegment, colorB);
+        // 3. 蛇尾巴（锥形）
+        AddTail(mesh, smoothPositions[smoothPositions.Count - 1], (smoothPositions[smoothPositions.Count - 1] - smoothPositions[smoothPositions.Count - 2]).normalized, radius, circleSegment, colorB);
+    }
+
+    // 新增：封口和尾巴生成函数
+    void AddCap(Mesh mesh, Vector3 center, Vector3 forward, float radius, int circleSegment, Color color)
+    {
+        List<Vector3> verts = new List<Vector3>(mesh.vertices);
+        List<int> tris = new List<int>(mesh.triangles);
+        List<Color> cols = new List<Color>(mesh.colors);
+        int baseIdx = verts.Count;
+        verts.Add(center);
+        cols.Add(color);
+        Vector3 up = Vector3.up;
+        if (Mathf.Abs(Vector3.Dot(forward, up)) > 0.99f) up = Vector3.right;
+        Vector3 right = Vector3.Cross(up, forward).normalized;
+        up = Vector3.Cross(forward, right).normalized;
+        for (int j = 0; j < circleSegment; j++)
+        {
+            float angle = 2 * Mathf.PI * j / circleSegment;
+            Vector3 offset = right * Mathf.Cos(angle) * radius + up * Mathf.Sin(angle) * radius;
+            verts.Add(center + offset);
+            cols.Add(color);
+        }
+        for (int j = 0; j < circleSegment; j++)
+        {
+            int v0 = baseIdx;
+            int v1 = baseIdx + 1 + j;
+            int v2 = baseIdx + 1 + (j + 1) % circleSegment;
+            tris.Add(v0);
+            tris.Add(v1);
+            tris.Add(v2);
+        }
+        mesh.vertices = verts.ToArray();
+        mesh.triangles = tris.ToArray();
+        mesh.colors = cols.ToArray();
+    }
+
+    void AddTail(Mesh mesh, Vector3 baseCenter, Vector3 forward, float radius, int circleSegment, Color color)
+    {
+        List<Vector3> verts = new List<Vector3>(mesh.vertices);
+        List<int> tris = new List<int>(mesh.triangles);
+        List<Color> cols = new List<Color>(mesh.colors);
+        int baseIdx = verts.Count;
+        // 锥尖（在管道末端方向延伸更长，正方向）
+        Vector3 tip = baseCenter + forward * (radius * 2.5f);
+        verts.Add(tip);
+        cols.Add(color);
+        // 圆环（与管道末端重合，半径与管道一致）
+        for (int j = 0; j < circleSegment; j++)
+        {
+            float angle = 2 * Mathf.PI * j / circleSegment;
+            Vector3 offset = Quaternion.LookRotation(forward) * (Vector3.right * Mathf.Cos(angle) * radius + Vector3.up * Mathf.Sin(angle) * radius);
+            verts.Add(baseCenter + offset);
+            cols.Add(color);
+        }
+        // 三角面
+        for (int j = 0; j < circleSegment; j++)
+        {
+            int v0 = baseIdx;
+            int v1 = baseIdx + 1 + j;
+            int v2 = baseIdx + 1 + (j + 1) % circleSegment;
+            tris.Add(v0);
+            tris.Add(v1);
+            tris.Add(v2);
+        }
+        mesh.vertices = verts.ToArray();
+        mesh.triangles = tris.ToArray();
+        mesh.colors = cols.ToArray();
     }
 
     public List<Vector3> GetPositions()

@@ -21,7 +21,7 @@ MonoBehaviour:
   foodRadius: 0.5
   wallRadius: 20
   wallThickness: 0.1
-  wallHeight: 2
+  wallHeight: 4
   segmentCount: 100
   groundThickness: 0.2
   moveSpeed: 5
@@ -30,3 +30,10 @@ MonoBehaviour:
   cameraFollowSpeed: 5
   selfCollisionThreshold: 0.4
   ignoreHeadPoints: 10
+  jumpHeight: 2.5
+  jumpDuration: 0.6
+  jumpYThreshold: 0.3
+  snakeBaseY: 0.5
+  stripeWorldLen: 1
+  stripeColorA: {r: 0.10580351, g: 0.26415092, b: 0.03862584, a: 1}
+  stripeColorB: {r: 0.2924528, g: 0.25368425, b: 0.06759523, a: 1}

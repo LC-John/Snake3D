@@ -14,7 +14,15 @@ public class SnakeController : MonoBehaviour
     void Start()
     {
         if (snakeHead != null && config != null)
+        {
             snakeHead.position = new Vector3(snakeHead.position.x, config.snakeBaseY, snakeHead.position.z);
+            // 设置蛇头颜色为条纹第一个颜色
+            var renderer = snakeHead.GetComponent<Renderer>();
+            if (renderer != null)
+            {
+                renderer.material.color = config.stripeColorA;
+            }
+        }
     }
 
     void Update()
