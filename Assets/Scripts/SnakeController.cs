@@ -11,6 +11,7 @@ public class SnakeController : MonoBehaviour
     private float jumpTime = 0f;
     // 移除headYHistory相关内容
     // 保留跳跃和移动逻辑
+    public float moveSpeed = 5f; // 可在Inspector调节
     void Start()
     {
         if (snakeHead != null && config != null)
@@ -56,8 +57,8 @@ public class SnakeController : MonoBehaviour
         }
         snakeHead.position = new Vector3(snakeHead.position.x, y, snakeHead.position.z);
 
-        snakeHead.Translate(Vector3.forward * moveSpeed * Time.deltaTime);
         float h = Input.GetAxis("Horizontal");
         snakeHead.Rotate(Vector3.up * h * turnSpeed * Time.deltaTime);
+        snakeHead.Translate(Vector3.forward * moveSpeed * Time.deltaTime);
     }
 } 

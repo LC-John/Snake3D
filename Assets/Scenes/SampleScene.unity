@@ -1973,6 +1973,7 @@ MonoBehaviour:
   miniMapUI: {fileID: 797092111}
   pauseUI: {fileID: 1053382154}
   helpUI: {fileID: 388841142}
+  explosionPrefab: {fileID: 1755250083135701661, guid: d0039debc0cd0c34f954a3298ba0f37a, type: 3}
 --- !u!4 &776320752
 Transform:
   m_ObjectHideFlags: 0
@@ -2251,12 +2252,8 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 'A / LeftArrow - Turn Left
-
-    D / RightArrow - Turn Right
-
-    ESE -
-    Pause'
+  m_text: "[A] / [\u2190] - Turn Left\n[D] / [\u2192] - Turn Right\n[SPACE] - Jump\n[ESE]
+    - Pause"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -2604,7 +2601,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Exit
+  m_text: EXIT
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}

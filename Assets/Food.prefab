@@ -119,3 +119,4 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   config: {fileID: 11400000, guid: bf15f4e4cc9117e4485240806bfa4cb8, type: 2}
+  fragmentEffectPrefab: {fileID: 1700424203372200066, guid: 06a8281fe1fe20744a7172ceac4bde7b, type: 3}

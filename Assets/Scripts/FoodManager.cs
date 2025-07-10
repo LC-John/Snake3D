@@ -81,7 +81,6 @@ public class FoodManager : MonoBehaviour
     public void RemoveFood(GameObject food)
     {
         if (foods.Contains(food))
-            foods.Remove(food);
-        Destroy(food);
+            food.GetComponent<Food>().Eat();
     }
 } 

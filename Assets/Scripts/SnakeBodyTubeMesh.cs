@@ -11,6 +11,7 @@ public class SnakeBodyTubeMesh : MonoBehaviour
     private List<Vector3> positions = new List<Vector3>();
     private Mesh mesh;
     private int currentLength = 1;
+    public int hiddenHeadCount = 0; // 新增：隐藏前面段数
 
     void Start()
     {
@@ -33,6 +34,7 @@ public class SnakeBodyTubeMesh : MonoBehaviour
 
     void Update()
     {
+        if (positions.Count == 0) return;
         float minDistance = config != null ? config.minDistance : 0.2f;
         float baseY = config != null ? config.snakeBaseY : 0f;
         float radius = config != null ? config.radius : 0.5f;
@@ -49,7 +51,7 @@ public class SnakeBodyTubeMesh : MonoBehaviour
         {
             positions.RemoveAt(positions.Count - 1);
         }
-        // 尾巴锥体采样点补充
+        // 先移除多余点，再补尾巴锥体采样点，确保尾巴采样点被保留
         int tailExtraPoints = 4;
         float tailLen = radius * 2.5f;
         if (positions.Count > 1)
@@ -64,11 +66,7 @@ public class SnakeBodyTubeMesh : MonoBehaviour
             }
         }
         GenerateTubeMesh();
-        // 补点后要移除多余尾巴点，防止累积
-        if (positions.Count > currentLength)
-        {
-            positions.RemoveRange(currentLength, positions.Count - currentLength);
-        }
+        // 尾巴采样点不再移除，确保参与碰撞判定
     }
 
     // Catmull-Rom插值函数
@@ -89,17 +87,19 @@ public class SnakeBodyTubeMesh : MonoBehaviour
         if (positions.Count < 2) return;
 
         // Catmull-Rom平滑采样点
-        int smoothCount = positions.Count * 4;
+        int startIdx = hiddenHeadCount; // 跳过前面被隐藏的段
+        if (startIdx >= positions.Count - 1) return; // 没有足够点生成Mesh
+        int smoothCount = (positions.Count - startIdx) * 4;
         List<Vector3> smoothPositions = new List<Vector3>();
         for (int i = 0; i < smoothCount; i++)
         {
-            float t = (float)i / (smoothCount - 1) * (positions.Count - 1);
-            int idx = Mathf.FloorToInt(t);
-            float localT = t - idx;
-            int i0 = Mathf.Clamp(idx - 1, 0, positions.Count - 1);
-            int i1 = Mathf.Clamp(idx, 0, positions.Count - 1);
-            int i2 = Mathf.Clamp(idx + 1, 0, positions.Count - 1);
-            int i3 = Mathf.Clamp(idx + 2, 0, positions.Count - 1);
+            float t = (float)i / (smoothCount - 1) * ((positions.Count - 1) - startIdx);
+            int idx = Mathf.FloorToInt(t) + startIdx;
+            float localT = t - Mathf.Floor(t);
+            int i0 = Mathf.Clamp(idx - 1, startIdx, positions.Count - 1);
+            int i1 = Mathf.Clamp(idx, startIdx, positions.Count - 1);
+            int i2 = Mathf.Clamp(idx + 1, startIdx, positions.Count - 1);
+            int i3 = Mathf.Clamp(idx + 2, startIdx, positions.Count - 1);
             smoothPositions.Add(CatmullRom(positions[i0], positions[i1], positions[i2], positions[i3], localT));
         }
 
@@ -203,6 +203,7 @@ public class SnakeBodyTubeMesh : MonoBehaviour
 
     void AddTail(Mesh mesh, Vector3 baseCenter, Vector3 forward, float radius, int circleSegment, Color color)
     {
+        if (forward == Vector3.zero) forward = Vector3.forward; // 防止LookRotation报错
         List<Vector3> verts = new List<Vector3>(mesh.vertices);
         List<int> tris = new List<int>(mesh.triangles);
         List<Color> cols = new List<Color>(mesh.colors);
@@ -248,5 +249,21 @@ public class SnakeBodyTubeMesh : MonoBehaviour
         {
             positions.Add(last);
         }
+    }
+
+    // 隐藏前count个采样点（推进爆炸用）
+    public void HideHeadSegments(int count)
+    {
+        hiddenHeadCount += count;
+        if (hiddenHeadCount > positions.Count - 2) // 至少保留2个点
+            hiddenHeadCount = Mathf.Max(positions.Count - 2, 0);
+    }
+
+    // 新增：推进爆炸后彻底清空蛇身
+    public void ClearAll()
+    {
+        positions.Clear();
+        hiddenHeadCount = 0;
+        if (mesh != null) mesh.Clear();
     }
 } 

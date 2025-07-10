@@ -45,4 +45,7 @@ public class SnakeGameConfig : ScriptableObject
     public float stripeWorldLen = 0.6f; // 每条纹的物理长度
     public Color stripeColorA = new Color(0.2f, 0.7f, 0.2f); // 柔和绿
     public Color stripeColorB = new Color(0.9f, 0.8f, 0.3f); // 柔和黄
+
+    [Header("死亡爆炸特效参数")]
+    public float explosionStepDelay = 0.05f; // 爆炸推进速度（秒）
 } 

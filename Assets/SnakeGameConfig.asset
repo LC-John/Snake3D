@@ -35,5 +35,6 @@ MonoBehaviour:
   jumpYThreshold: 0.3
   snakeBaseY: 0.5
   stripeWorldLen: 1
-  stripeColorA: {r: 0.10580351, g: 0.26415092, b: 0.03862584, a: 1}
+  stripeColorA: {r: 0.11864991, g: 0.2627451, b: 0.039215688, a: 1}
   stripeColorB: {r: 0.2924528, g: 0.25368425, b: 0.06759523, a: 1}
+  explosionStepDelay: 0.3
